@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SchoolPayment.Data;
+using SchoolPayment.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,18 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddAuthorization(options => {
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    options.AddPolicy(AppPolicyName.Management,
+        policy => policy.RequireClaim(AppClaimType.Manage, "true"));
+    options.AddPolicy(AppPolicyName.Accessing,
+        policy => policy.RequireAssertion(
+            context => context.User.HasClaim(
+                c =>
+                c.Type == AppClaimType.Manage ||
+                c.Type == AppClaimType.Basic)));
+});
 
 var app = builder.Build();
 

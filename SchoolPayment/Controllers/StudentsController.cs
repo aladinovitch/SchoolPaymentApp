@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ using SchoolPayment.Models;
 
 namespace SchoolPayment.Controllers
 {
+    [Authorize(Policy=AppPolicyName.Accessing)]
     public class StudentsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -20,10 +22,13 @@ namespace SchoolPayment.Controllers
             _context = context;
         }
 
+        [Authorize(Policy = AppPolicyName.Accessing)]
         // GET: Students
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Students.ToListAsync());
+            if(User.HasClaim(AppClaimType.Manage,"true"))
+                return View(await _context.Students.ToListAsync());
+            return View("IndexReadonly", await _context.Students.ToListAsync());
         }
 
         // GET: Students/Details/5
@@ -66,6 +71,7 @@ namespace SchoolPayment.Controllers
             return View(student);
         }
 
+        [Authorize(Policy = AppPolicyName.Management)]
         // GET: Students/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
